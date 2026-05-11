@@ -35,7 +35,7 @@ ${selectedCar ? `القسط الشهري: ${new Intl.NumberFormat("ar-DZ").forma
     `
 
     // Send to Formspree (free service, no API key needed)
-    const formspreeResponse = await fetch("https://formspree.io/f/xyzpqwvn", {
+    const formspreeResponse = await fetch("https://formspree.io/f/mrejjgpz", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
