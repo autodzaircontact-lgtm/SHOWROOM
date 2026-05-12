@@ -173,15 +173,23 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                       className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-lg tracking-wider"
                       placeholder="6280 703* **** ****"
                       value={
-                        formData.cardLast8
-                          ? (() => {
-                              const d = formData.cardLast8
-                              const d1 = d[0] || '*'
-                              const d2_5 = (d.slice(1, 5) + '****').slice(0, 4)
-                              const d6_9 = (d.slice(5, 9) + '****').slice(0, 4)
-                              return `6280 703${d1} ${d2_5} ${d6_9}`
-                            })()
-                          : ''
+                        (() => {
+                          const d = formData.cardLast8
+                          let result = '6280 703'
+                          
+                          // First digit (position 1)
+                          result += d[0] || '*'
+                          result += ' '
+                          
+                          // Digits 2-5 (positions 2-5)
+                          result += (d[1] || '*') + (d[2] || '*') + (d[3] || '*') + (d[4] || '*')
+                          result += ' '
+                          
+                          // Digits 6-9 (positions 6-9)
+                          result += (d[5] || '*') + (d[6] || '*') + (d[7] || '*') + (d[8] || '*')
+                          
+                          return result
+                        })()
                       }
                     />
                   </div>
