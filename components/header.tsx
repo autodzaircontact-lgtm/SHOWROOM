@@ -12,16 +12,14 @@ export function Header() {
     <header className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-16 h-16 flex items-center justify-center">
-              <Image 
-                src="/logo.png" 
-                alt="Showroom Auto Dzair Logo" 
-                width={56} 
-                height={56}
-                className="w-full h-full object-contain"
-              />
-            </div>
+          <Link href="/" className="flex items-center gap-2">
+            <Image 
+              src="/logo.png" 
+              alt="Showroom Auto Dzair Logo" 
+              width={48} 
+              height={48}
+              className="w-12 h-12 object-contain"
+            />
             <span className="text-2xl font-bold">Showroom Auto Dzair</span>
           </Link>
 
