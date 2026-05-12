@@ -157,31 +157,25 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                     <label className="block text-sm font-medium mb-2">
                       آخر 8 أرقام من البطاقة الذهبية *
                     </label>
+                    <div className="font-mono text-lg tracking-wider px-4 py-3 rounded-lg border border-input bg-muted text-foreground">
+                      6280 703
+                      {formData.cardLast8[0] || '*'}{' '}
+                      {formData.cardLast8[1] || '*'}{formData.cardLast8[2] || '*'}{formData.cardLast8[3] || '*'}{formData.cardLast8[4] || '*'}{' '}
+                      {formData.cardLast8[5] || '*'}{formData.cardLast8[6] || '*'}{formData.cardLast8[7] || '*'}{formData.cardLast8[8] || '*'}
+                    </div>
                     <input
                       type="text"
                       name="cardLast8"
                       dir="ltr"
                       onChange={(e) => {
-                        console.log("[v0] Card input onChange - raw value:", e.target.value)
                         const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 9)
-                        console.log("[v0] After extract digits:", digitsOnly)
                         handleChange({ target: { name: 'cardLast8', value: digitsOnly } })
                       }}
                       inputMode="numeric"
-                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-lg tracking-wider"
-                      placeholder="6280 703* **** ****"
-                      value={
-                        (() => {
-                          const d = formData.cardLast8 || ''
-                          console.log("[v0] Card value display - stored digits:", d)
-                          let result = '6280 703'
-                          result += (d[0] || '*') + ' '
-                          result += (d[1] || '*') + (d[2] || '*') + (d[3] || '*') + (d[4] || '*') + ' '
-                          result += (d[5] || '*') + (d[6] || '*') + (d[7] || '*') + (d[8] || '*')
-                          console.log("[v0] Card display result:", result)
-                          return result
-                        })()
-                      }
+                      maxLength="9"
+                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-lg tracking-wider mt-2"
+                      placeholder="123456789"
+                      value={formData.cardLast8}
                     />
                   </div>
                   <div>
