@@ -160,7 +160,6 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                     <input
                       type="text"
                       name="cardLast8"
-                      value={formData.cardLast8}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, '').slice(0, 8)
                         handleChange({ target: { name: 'cardLast8', value } })
@@ -171,7 +170,7 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                       placeholder="6280 703X XXXX XXXX"
                       value={
                         formData.cardLast8
-                          ? `6280 703${formData.cardLast8.slice(0, 1)} ${formData.cardLast8.slice(1, 5)} ${formData.cardLast8.slice(5)}`
+                          ? `6280 703${formData.cardLast8.slice(0, 1)} ${formData.cardLast8.slice(1, 5)} ${formData.cardLast8.slice(5, 8)}`
                           : ''
                       }
                     />
