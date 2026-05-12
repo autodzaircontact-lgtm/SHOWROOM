@@ -155,27 +155,29 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      آخر 8 أرقام من البطاقة الذهبية *
+                      رقم البطاقة الذهبية *
                     </label>
-                    <div className="font-mono text-lg tracking-wider px-4 py-3 rounded-lg border border-input bg-muted text-foreground">
-                      6280 703
-                      {formData.cardLast8[0] || '*'}{' '}
-                      {formData.cardLast8[1] || '*'}{formData.cardLast8[2] || '*'}{formData.cardLast8[3] || '*'}{formData.cardLast8[4] || '*'}{' '}
-                      {formData.cardLast8[5] || '*'}{formData.cardLast8[6] || '*'}{formData.cardLast8[7] || '*'}{formData.cardLast8[8] || '*'}
-                    </div>
                     <input
                       type="text"
                       name="cardLast8"
                       dir="ltr"
                       onChange={(e) => {
-                        const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 9)
-                        handleChange({ target: { name: 'cardLast8', value: digitsOnly } })
+                        let value = e.target.value
+                        // Remove non-digits
+                        const digitsOnly = value.replace(/\D/g, '')
+                        // Keep only the last 9 digits (after 6280703)
+                        const last9 = digitsOnly.slice(-9)
+                        handleChange({ target: { name: 'cardLast8', value: last9 } })
                       }}
                       inputMode="numeric"
-                      maxLength="9"
-                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-lg tracking-wider mt-2"
-                      placeholder="123456789"
-                      value={formData.cardLast8}
+                      maxLength="16"
+                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-lg tracking-wider"
+                      placeholder="6280 703X XXXX XXXX"
+                      value={
+                        formData.cardLast8
+                          ? `6280 703${formData.cardLast8.slice(0, 1)} ${formData.cardLast8.slice(1, 5)} ${formData.cardLast8.slice(5, 9)}`
+                          : ''
+                      }
                     />
                   </div>
                   <div>
