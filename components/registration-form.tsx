@@ -161,18 +161,21 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                       type="text"
                       name="cardLast8"
                       onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 8)
-                        handleChange({ target: { name: 'cardLast8', value } })
+                        const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 9)
+                        handleChange({ target: { name: 'cardLast8', value: digitsOnly } })
                       }}
                       maxLength={19}
                       inputMode="numeric"
                       className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-lg tracking-wider"
-                      placeholder="6280 703X XXXX XXXX"
-                      value={
-                        formData.cardLast8 && formData.cardLast8.length > 0
-                          ? `6280 703${formData.cardLast8.slice(0, 1)} ${formData.cardLast8.slice(1, 5)} ${formData.cardLast8.slice(5)}`
-                          : ''
-                      }
+                      placeholder="6280 703* **** ****"
+                      value={(() => {
+                        if (!formData.cardLast8) return ''
+                        const digits = formData.cardLast8
+                        const digit1 = digits[0] || '*'
+                        const digits2_5 = digits.slice(1, 5).padEnd(4, '*')
+                        const digits6_9 = digits.slice(5, 9).padEnd(4, '*')
+                        return `6280 703${digit1} ${digits2_5} ${digits6_9}`
+                      })()}
                     />
                   </div>
                   <div>
@@ -188,7 +191,7 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3">
-                  تستعمل البطاقة في فتح حساب التقسيط لسحب الدفعات بالت��سيط في الوقت المحدد وبكل
+                  تستعمل البطاقة في فتح حساب التقسيط ل��حب الدفعات بالت��سيط في الوقت المحدد وبكل
                   شفافية.
                 </p>
               </div>
