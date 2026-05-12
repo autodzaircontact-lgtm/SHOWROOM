@@ -162,23 +162,18 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                       name="cardLast8"
                       dir="ltr"
                       onChange={(e) => {
-                        let value = e.target.value
-                        // Remove non-digits
-                        const digitsOnly = value.replace(/\D/g, '')
-                        // Keep only the last 9 digits (after 6280703)
-                        const last9 = digitsOnly.slice(-9)
-                        handleChange({ target: { name: 'cardLast8', value: last9 } })
+                        const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 9)
+                        handleChange({ target: { name: 'cardLast8', value: digitsOnly } })
                       }}
                       inputMode="numeric"
-                      maxLength="16"
+                      maxLength="9"
                       className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-lg tracking-wider"
-                      placeholder="6280 703X XXXX XXXX"
-                      value={
-                        formData.cardLast8
-                          ? `6280 703${formData.cardLast8.slice(0, 1)} ${formData.cardLast8.slice(1, 5)} ${formData.cardLast8.slice(5, 9)}`
-                          : ''
-                      }
+                      placeholder="123456789"
+                      value={formData.cardLast8}
                     />
+                    <div className="mt-2 px-4 py-2 rounded-lg bg-muted text-foreground font-mono text-sm text-center">
+                      {`6280 703${formData.cardLast8.slice(0, 1)} ${formData.cardLast8.slice(1, 5) || '****'} ${formData.cardLast8.slice(5, 9) || '****'}`}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">تاريخ انتهاء الصلاحية *</label>
