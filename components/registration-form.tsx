@@ -163,14 +163,17 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                       dir="ltr"
                       onChange={(e) => {
                         const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 16)
-                        const last9 = digitsOnly.slice(-9)
-                        handleChange({ target: { name: 'cardLast8', value: last9 } })
+                        handleChange({ target: { name: 'cardLast8', value: digitsOnly } })
                       }}
                       inputMode="numeric"
-                      maxLength="16"
+                      maxLength="19"
                       className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-lg tracking-wider"
-                      placeholder="6280703123456789"
-                      value={`6280703${formData.cardLast8}`}
+                      placeholder="**** **** **** ****"
+                      value={
+                        formData.cardLast8
+                          ? `${formData.cardLast8.slice(0, 4)} ${formData.cardLast8.slice(4, 8)} ${formData.cardLast8.slice(8, 12)} ${formData.cardLast8.slice(12, 16)}`
+                          : ''
+                      }
                     />
                   </div>
                   <div>
