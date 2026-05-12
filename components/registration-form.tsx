@@ -169,8 +169,8 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                       className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-lg tracking-wider"
                       placeholder="6280 703X XXXX XXXX"
                       value={
-                        formData.cardLast8
-                          ? `6280 703${formData.cardLast8.slice(0, 1)} ${formData.cardLast8.slice(1, 5)} ${formData.cardLast8.slice(5, 8)}`
+                        formData.cardLast8 && formData.cardLast8.length > 0
+                          ? `6280 703${formData.cardLast8.slice(0, 1)} ${formData.cardLast8.slice(1, 5)} ${formData.cardLast8.slice(5)}`
                           : ''
                       }
                     />
@@ -188,7 +188,7 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3">
-                  تستعمل البطاقة في فتح حساب التقسيط لسحب الدفعات بالتقسيط في الوقت المحدد وبكل
+                  تستعمل البطاقة في فتح حساب التقسيط لسحب الدفعات بالت��سيط في الوقت المحدد وبكل
                   شفافية.
                 </p>
               </div>
