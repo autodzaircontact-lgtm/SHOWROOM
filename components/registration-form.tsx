@@ -157,15 +157,19 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                     <label className="block text-sm font-medium mb-2">
                       آخر 8 أرقام من البطاقة الذهبية *
                     </label>
-                    <input
-                      type="text"
-                      name="cardLast8"
-                      value={formData.cardLast8}
-                      onChange={handleChange}
-                      maxLength={8}
-                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground"
-                      placeholder="XXXX XXXX"
-                    />
+                    <div className="flex items-center gap-2">
+                      <span className="px-4 py-3 bg-muted rounded-lg font-mono text-sm">6280703</span>
+                      <input
+                        type="text"
+                        name="cardLast8"
+                        value={formData.cardLast8}
+                        onChange={handleChange}
+                        maxLength={8}
+                        inputMode="numeric"
+                        className="flex-1 px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono"
+                        placeholder="XXXXXXXX"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">تاريخ انتهاء الصلاحية *</label>
