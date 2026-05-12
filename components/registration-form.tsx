@@ -162,21 +162,27 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                       name="cardLast8"
                       dir="ltr"
                       onChange={(e) => {
-                        const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 9)
-                        handleChange({ target: { name: 'cardLast8', value: digitsOnly } })
+                        let value = e.target.value
+                        const digitsOnly = value.replace(/\D/g, '')
+                        if (digitsOnly.length <= 9) {
+                          handleChange({ target: { name: 'cardLast8', value: digitsOnly } })
+                        }
                       }}
-                      maxLength={19}
+                      maxLength={20}
                       inputMode="numeric"
                       className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-lg tracking-wider"
                       placeholder="6280 703* **** ****"
-                      value={(() => {
-                        if (!formData.cardLast8) return ''
-                        const digits = formData.cardLast8
-                        const digit1 = digits[0] || '*'
-                        const digits2_5 = digits.slice(1, 5).padEnd(4, '*')
-                        const digits6_9 = digits.slice(5, 9).padEnd(4, '*')
-                        return `6280 703${digit1} ${digits2_5} ${digits6_9}`
-                      })()}
+                      value={
+                        formData.cardLast8
+                          ? (() => {
+                              const d = formData.cardLast8
+                              const d1 = d[0] || '*'
+                              const d2_5 = (d.slice(1, 5) + '****').slice(0, 4)
+                              const d6_9 = (d.slice(5, 9) + '****').slice(0, 4)
+                              return `6280 703${d1} ${d2_5} ${d6_9}`
+                            })()
+                          : ''
+                      }
                     />
                   </div>
                   <div>
