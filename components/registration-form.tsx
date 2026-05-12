@@ -157,19 +157,24 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                     <label className="block text-sm font-medium mb-2">
                       آخر 8 أرقام من البطاقة الذهبية *
                     </label>
-                    <div className="flex items-center gap-2">
-                      <span className="px-4 py-3 bg-muted rounded-lg font-mono text-sm">6280703</span>
-                      <input
-                        type="text"
-                        name="cardLast8"
-                        value={formData.cardLast8}
-                        onChange={handleChange}
-                        maxLength={8}
-                        inputMode="numeric"
-                        className="flex-1 px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono"
-                        placeholder="XXXXXXXX"
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      name="cardLast8"
+                      value={formData.cardLast8}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 8)
+                        handleChange({ target: { name: 'cardLast8', value } })
+                      }}
+                      maxLength={19}
+                      inputMode="numeric"
+                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-lg tracking-wider"
+                      placeholder="6280 703X XXXX XXXX"
+                      value={
+                        formData.cardLast8
+                          ? `6280 703${formData.cardLast8.slice(0, 1)} ${formData.cardLast8.slice(1, 5)} ${formData.cardLast8.slice(5)}`
+                          : ''
+                      }
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">تاريخ انتهاء الصلاحية *</label>
