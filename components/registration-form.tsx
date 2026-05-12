@@ -160,6 +160,7 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                     <input
                       type="text"
                       name="cardLast8"
+                      dir="ltr"
                       onChange={(e) => {
                         const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 9)
                         handleChange({ target: { name: 'cardLast8', value: digitsOnly } })
