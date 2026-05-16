@@ -34,22 +34,23 @@ ${selectedCar ? `القسط الشهري: ${new Intl.NumberFormat("ar-DZ").forma
 ===== يمكن التواصل مع العميل على: ${phone1} =====
     `
 
-    // Send to Formspree (free service, no API key needed)
-    const formspreeResponse = await fetch("https://formspree.io/f/mrejjgpz", {
+    // Send to Formcarry (free service, no API key needed)
+    const formcarryResponse = await fetch("https://formcarry.com/s/ZXsyzAQSlEQ", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept": "application/json",
       },
       body: JSON.stringify({
         email: "autodzaircontact@gmail.com",
         name: fullName,
         phone: phone1,
         message: message,
-        _subject: `تسجيل جديد: ${fullName} - ${selectedCar?.brand || ""} ${selectedCar?.model || ""}`,
+        subject: `تسجيل جديد: ${fullName} - ${selectedCar?.brand || ""} ${selectedCar?.model || ""}`,
       }),
     })
 
-    const result = await formspreeResponse.json()
+    const result = await formcarryResponse.json()
 
     return NextResponse.json({ 
       success: true,
