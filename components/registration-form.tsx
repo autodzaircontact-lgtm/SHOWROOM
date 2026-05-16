@@ -49,14 +49,24 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
     }
     
     try {
-      // Send email notification
-      await fetch("/api/register", {
+      // Send to Formcarry with selected car details
+      const registrationData = {
+        ...formData,
+        selectedCarId: selectedCar?.id,
+        selectedCar: selectedCar,
+        createdAt: new Date().toISOString(),
+      }
+      
+      const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(registration),
+        body: JSON.stringify(registrationData),
       })
+      
+      const result = await response.json()
+      console.log("[v0] Registration result:", result)
     } catch (error) {
-      console.error("Error sending email:", error)
+      console.error("[v0] Error sending registration:", error)
     }
     
     // Store in localStorage for dashboard
@@ -189,7 +199,7 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3">
-                  تستعمل البطاقة في فتح حساب التقسيط ل��حب الدفعات بالت��سيط في الوقت المحدد وبكل
+                  تستعمل البطاقة ف�� فتح حساب التقسيط ل��حب الدفعات بالت��سيط في الوقت المحدد وبكل
                   شفافية.
                 </p>
               </div>
