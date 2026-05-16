@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Phone, Menu, X } from "lucide-react"
 import { useState } from "react"
 
@@ -10,9 +11,16 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-lg">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold">Showroom Auto Dzair</span>
+            <Image 
+              src="/logo.png" 
+              alt="Showroom Auto Dzair Logo" 
+              width={48} 
+              height={48}
+              className="w-12 h-12 object-contain"
+            />
+            <span className="text-2xl font-bold">Showroom Auto Dzair</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -35,11 +43,11 @@ export function Header() {
           </nav>
 
           <a
-            href="tel:+213555123456"
+            href="tel:+213559365082"
             className="hidden md:flex items-center gap-2 bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20 transition-colors"
           >
             <Phone className="h-4 w-4" />
-            <span dir="ltr">+213 555 123 456</span>
+            <span dir="ltr">0559 365 082</span>
           </a>
 
           {/* Mobile Menu Button */}
@@ -71,11 +79,11 @@ export function Header() {
               اتصل بنا
             </Link>
             <a
-              href="tel:+213555123456"
+              href="tel:+213559365082"
               className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20 transition-colors w-fit"
             >
               <Phone className="h-4 w-4" />
-              <span dir="ltr">+213 555 123 456</span>
+              <span dir="ltr">0559 365 082</span>
             </a>
           </nav>
         )}

