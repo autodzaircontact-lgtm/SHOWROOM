@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { validateCredentials, createSession, setSessionCookie } from "@/lib/auth"
+import { validateCredentials, createSession } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,9 +20,17 @@ export async function POST(request: NextRequest) {
     }
 
     const sessionToken = await createSession(username)
-    await setSessionCookie(sessionToken)
+    
+    const response = NextResponse.json({ success: true })
+    response.cookies.set("admin_session", sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60, // 24 hours
+      path: "/",
+    })
 
-    return NextResponse.json({ success: true })
+    return response
   } catch {
     return NextResponse.json(
       { error: "حدث خطأ أثناء تسجيل الدخول" },

@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server"
-import { clearSession } from "@/lib/auth"
 
 export async function POST() {
   try {
-    await clearSession()
-    return NextResponse.json({ success: true })
+    const response = NextResponse.json({ success: true })
+    response.cookies.set("admin_session", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 0, // Expire immediately
+      path: "/",
+    })
+    return response
   } catch {
     return NextResponse.json(
       { error: "حدث خطأ أثناء تسجيل الخروج" },
