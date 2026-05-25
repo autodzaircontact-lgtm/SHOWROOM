@@ -3,6 +3,24 @@
 import { useEffect, useState } from "react"
 import { Car, Users, DollarSign, TrendingUp, Calendar, FileText } from "lucide-react"
 import { cars, formatPrice, Registration } from "@/lib/data"
+import { createClient } from "@/lib/supabase/client"
+
+// Map Supabase snake_case to camelCase
+function mapRegistration(row: any): Registration {
+  return {
+    id: row.id,
+    fullName: row.full_name,
+    nin: row.nin,
+    cardLast8: row.card_last8,
+    cardExpiry: row.card_expiry,
+    phone1: row.phone1,
+    phone2: row.phone2,
+    hasPreviousInstallment: row.has_previous_installment,
+    selectedCarId: row.selected_car_id,
+    createdAt: row.created_at,
+    status: row.status,
+  }
+}
 
 interface Stats {
   totalCars: number
@@ -25,10 +43,20 @@ export default function DashboardPage() {
   })
 
   useEffect(() => {
-    // Load registrations from localStorage
-    const stored = localStorage.getItem("registrations")
-    if (stored) {
-      const regs: Registration[] = JSON.parse(stored)
+    // Load registrations from Supabase
+    async function fetchRegistrations() {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('registrations')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error("[v0] Error fetching registrations:", error)
+        return
+      }
+      
+      const regs: Registration[] = (data || []).map(mapRegistration)
       setRegistrations(regs)
       
       const pending = regs.filter(r => r.status === "pending").length
@@ -49,6 +77,8 @@ export default function DashboardPage() {
         averageCarPrice: Math.round(cars.reduce((sum, car) => sum + car.price, 0) / cars.length),
       })
     }
+    
+    fetchRegistrations()
   }, [])
 
   // Count cars by brand

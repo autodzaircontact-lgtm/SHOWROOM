@@ -2,7 +2,25 @@
 
 import { useEffect, useState } from "react"
 import { cars, formatPrice, Registration } from "@/lib/data"
+import { createClient } from "@/lib/supabase/client"
 import { Search, Clock, CheckCircle, XCircle, Phone, CreditCard, User } from "lucide-react"
+
+// Map Supabase snake_case to camelCase
+function mapRegistration(row: any): Registration {
+  return {
+    id: row.id,
+    fullName: row.full_name,
+    nin: row.nin,
+    cardLast8: row.card_last8,
+    cardExpiry: row.card_expiry,
+    phone1: row.phone1,
+    phone2: row.phone2,
+    hasPreviousInstallment: row.has_previous_installment,
+    selectedCarId: row.selected_car_id,
+    createdAt: row.created_at,
+    status: row.status,
+  }
+}
 
 export default function RegistrationsPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
@@ -11,18 +29,42 @@ export default function RegistrationsPage() {
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
 
   useEffect(() => {
-    const stored = localStorage.getItem("registrations")
-    if (stored) {
-      setRegistrations(JSON.parse(stored))
+    async function fetchRegistrations() {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('registrations')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.error("[v0] Error fetching registrations:", error)
+        return
+      }
+      
+      setRegistrations((data || []).map(mapRegistration))
     }
+    
+    fetchRegistrations()
   }, [])
 
-  const updateStatus = (id: string, status: "pending" | "approved" | "rejected") => {
+  const updateStatus = async (id: string, status: "pending" | "approved" | "rejected") => {
+    const supabase = createClient()
+    
+    const { error } = await supabase
+      .from('registrations')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    
+    if (error) {
+      console.error("[v0] Error updating status:", error)
+      return
+    }
+    
+    // Update local state
     const updated = registrations.map(r => 
       r.id === id ? { ...r, status } : r
     )
     setRegistrations(updated)
-    localStorage.setItem("registrations", JSON.stringify(updated))
     if (selectedRegistration?.id === id) {
       setSelectedRegistration({ ...selectedRegistration, status })
     }
