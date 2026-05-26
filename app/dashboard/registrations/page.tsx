@@ -1,30 +1,64 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { cars, formatPrice, Registration } from "@/lib/data"
-import { Search, Clock, CheckCircle, XCircle, Phone, CreditCard, User } from "lucide-react"
+import { Search, Clock, CheckCircle, XCircle, Phone, CreditCard, User, RefreshCw } from "lucide-react"
 
 export default function RegistrationsPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isUpdating, setIsUpdating] = useState(false)
 
-  useEffect(() => {
-    const stored = localStorage.getItem("registrations")
-    if (stored) {
-      setRegistrations(JSON.parse(stored))
+  const fetchRegistrations = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch("/api/registrations")
+      const data = await response.json()
+      
+      if (data.success && data.registrations) {
+        setRegistrations(data.registrations)
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching registrations:", error)
+    } finally {
+      setIsLoading(false)
     }
   }, [])
 
-  const updateStatus = (id: string, status: "pending" | "approved" | "rejected") => {
-    const updated = registrations.map(r => 
-      r.id === id ? { ...r, status } : r
-    )
-    setRegistrations(updated)
-    localStorage.setItem("registrations", JSON.stringify(updated))
-    if (selectedRegistration?.id === id) {
-      setSelectedRegistration({ ...selectedRegistration, status })
+  useEffect(() => {
+    fetchRegistrations()
+  }, [fetchRegistrations])
+
+  const updateStatus = async (id: string, status: "pending" | "approved" | "rejected") => {
+    setIsUpdating(true)
+    try {
+      const response = await fetch("/api/registrations", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id, status }),
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Update local state
+        const updated = registrations.map(r => 
+          r.id === id ? { ...r, status } : r
+        )
+        setRegistrations(updated)
+        if (selectedRegistration?.id === id) {
+          setSelectedRegistration({ ...selectedRegistration, status })
+        }
+      }
+    } catch (error) {
+      console.error("[v0] Error updating status:", error)
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -44,9 +78,19 @@ export default function RegistrationsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">التسجيلات</h1>
-        <p className="text-muted-foreground mt-1">إدارة طلبات التسجيل</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">التسجيلات</h1>
+          <p className="text-muted-foreground mt-1">إدارة طلبات التسجيل</p>
+        </div>
+        <button
+          onClick={fetchRegistrations}
+          disabled={isLoading}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          تحديث
+        </button>
       </div>
 
       {/* Stats */}
@@ -106,7 +150,12 @@ export default function RegistrationsPage() {
       <div className="flex gap-6">
         {/* List */}
         <div className="flex-1 bg-card rounded-xl border border-border overflow-hidden">
-          {filteredRegistrations.length > 0 ? (
+          {isLoading ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <RefreshCw className="h-12 w-12 mx-auto mb-3 animate-spin opacity-30" />
+              <p>جاري تحميل التسجيلات...</p>
+            </div>
+          ) : filteredRegistrations.length > 0 ? (
             <div className="divide-y divide-border">
               {filteredRegistrations.map(reg => {
                 const car = cars.find(c => c.id === reg.selectedCarId)
@@ -213,19 +262,22 @@ export default function RegistrationsPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => updateStatus(selectedRegistration.id, "approved")}
-                  className="flex-1 bg-green-500 text-white py-2 rounded-lg font-medium hover:bg-green-600 transition-colors"
+                  disabled={isUpdating}
+                  className="flex-1 bg-green-500 text-white py-2 rounded-lg font-medium hover:bg-green-600 transition-colors disabled:opacity-50"
                 >
                   قبول
                 </button>
                 <button
                   onClick={() => updateStatus(selectedRegistration.id, "rejected")}
-                  className="flex-1 bg-red-500 text-white py-2 rounded-lg font-medium hover:bg-red-600 transition-colors"
+                  disabled={isUpdating}
+                  className="flex-1 bg-red-500 text-white py-2 rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
                 >
                   رفض
                 </button>
                 <button
                   onClick={() => updateStatus(selectedRegistration.id, "pending")}
-                  className="flex-1 bg-amber-500 text-white py-2 rounded-lg font-medium hover:bg-amber-600 transition-colors"
+                  disabled={isUpdating}
+                  className="flex-1 bg-amber-500 text-white py-2 rounded-lg font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
                 >
                   انتظار
                 </button>

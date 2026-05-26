@@ -1,73 +1,74 @@
 import { NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 import { cars } from "@/lib/data"
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { fullName, nin, cardLast8, cardExpiry, phone1, phone2, hasPreviousInstallment, selectedCarId, selectedCar: carFromBody, createdAt } = body
+    const { fullName, nin, cardLast8, cardExpiry, phone1, phone2, hasPreviousInstallment, selectedCarId, selectedCar: carFromBody } = body
 
     // Use car from body or find by ID
     const selectedCar = carFromBody || cars.find((car) => car.id === selectedCarId)
 
-    // Format message for Formspree (completely free, no setup needed)
-    const message = `
-===== تسجيل جديد في Showroom Auto Dzair =====
-
-👤 المعلومات الشخصية:
-الاسم الكامل: ${fullName}
-رقم التعريف الوطني: ${nin}
-رقم الهاتف الأول: ${phone1}
-رقم الهاتف الثاني: ${phone2 || "غير محدد"}
-هل لديك تقسيط سابق: ${hasPreviousInstallment ? "نعم ✓" : "لا ✗"}
-
-💳 معلومات البطاقة الذهبية:
-آخر 8 أرقام: ****${cardLast8}
-تاريخ الصلاحية: ${cardExpiry}
-
-🚗 السيارة المختارة:
-${selectedCar ? `${selectedCar.brand} ${selectedCar.model} (${selectedCar.year})` : "لم يتم اختيار سيارة"}
-${selectedCar ? `السعر: ${new Intl.NumberFormat("ar-DZ").format(selectedCar.price)} دج` : ""}
-${selectedCar ? `القسط الشهري: ${new Intl.NumberFormat("ar-DZ").format(selectedCar.monthlyPayment)} دج/شهر` : ""}
-
-📅 تاريخ التسجيل: ${new Date(createdAt).toLocaleString("ar-DZ")}
-
-===== يمكن التواصل مع العميل على: ${phone1} =====
-    `
-
-    // Send to Formcarry (free service, no API key needed)
-    const formcarryResponse = await fetch("https://formcarry.com/s/ZXsyzAQSlEQ", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
-      body: JSON.stringify({
-        fullName: fullName,
+    // Save to Supabase
+    const supabase = await createClient()
+    
+    const { data: registration, error: dbError } = await supabase
+      .from("registrations")
+      .insert({
+        full_name: fullName,
         nin: nin,
+        card_last8: cardLast8,
+        card_expiry: cardExpiry,
         phone1: phone1,
-        phone2: phone2 || "غير محدد",
-        cardNumber: cardLast8,
-        cardExpiry: cardExpiry,
-        hasPreviousInstallment: hasPreviousInstallment ? "نعم" : "لا",
-        selectedCar: selectedCar ? `${selectedCar.brand} ${selectedCar.model}` : "لم يتم الاختيار",
-        carPrice: selectedCar ? `${selectedCar.price} دج` : "",
-        monthlyPayment: selectedCar ? `${selectedCar.monthlyPayment} دج/شهر` : "",
-        registrationDate: new Date(createdAt).toLocaleString("ar-DZ"),
-        _subject: `تسجيل جديد: ${fullName}`,
-      }),
-    })
+        phone2: phone2 || null,
+        has_previous_installment: hasPreviousInstallment ?? false,
+        selected_car_id: selectedCarId,
+        status: "pending",
+      })
+      .select()
+      .single()
 
-    console.log("[v0] Formcarry response status:", formcarryResponse.status)
-    const result = await formcarryResponse.json()
-    console.log("[v0] Formcarry result:", result)
+    if (dbError) {
+      console.error("[v0] Supabase insert error:", dbError)
+      return NextResponse.json(
+        { success: false, message: "حدث خطأ في حفظ البيانات" },
+        { status: 500 }
+      )
+    }
 
-    if (!formcarryResponse.ok) {
-      console.error("[v0] Formcarry error:", result)
+    // Also send to Formcarry for email notifications (non-blocking)
+    try {
+      await fetch("https://formcarry.com/s/ZXsyzAQSlEQ", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({
+          fullName: fullName,
+          nin: nin,
+          phone1: phone1,
+          phone2: phone2 || "غير محدد",
+          cardNumber: cardLast8,
+          cardExpiry: cardExpiry,
+          hasPreviousInstallment: hasPreviousInstallment ? "نعم" : "لا",
+          selectedCar: selectedCar ? `${selectedCar.brand} ${selectedCar.model}` : "لم يتم الاختيار",
+          carPrice: selectedCar ? `${selectedCar.price} دج` : "",
+          monthlyPayment: selectedCar ? `${selectedCar.monthlyPayment} دج/شهر` : "",
+          registrationDate: new Date().toLocaleString("ar-DZ"),
+          _subject: `تسجيل جديد: ${fullName}`,
+        }),
+      })
+    } catch (formcarryError) {
+      // Log but don't fail the registration if Formcarry fails
+      console.error("[v0] Formcarry error (non-critical):", formcarryError)
     }
 
     return NextResponse.json({ 
       success: true,
-      message: "تم تسجيل بيانات العميل بنجاح وسيتم إرسال الإشعار"
+      message: "تم تسجيل بيانات العميل بنجاح",
+      registration
     })
   } catch (error) {
     console.error("[v0] Registration error:", error)
