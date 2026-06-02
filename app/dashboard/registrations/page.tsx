@@ -309,35 +309,34 @@ export default function RegistrationsPage() {
                   </div>
                 </div>
               </div>
-          )
-        })()}
 
-            {/* Actions */}
-            <div className="pt-4 border-t border-border space-y-3">
-              <p className="text-sm font-medium text-card-foreground">تحديث الحالة</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => updateStatus(selectedRegistration.id, "approved")}
-                  className="flex-1 bg-green-500 text-white py-2 rounded-lg font-medium hover:bg-green-600 transition-colors"
-                >
-                  قبول
-                </button>
-                <button
-                  onClick={() => updateStatus(selectedRegistration.id, "rejected")}
-                  className="flex-1 bg-red-500 text-white py-2 rounded-lg font-medium hover:bg-red-600 transition-colors"
-                >
-                  رفض
-                </button>
-                <button
-                  onClick={() => updateStatus(selectedRegistration.id, "pending")}
-                  className="flex-1 bg-amber-500 text-white py-2 rounded-lg font-medium hover:bg-amber-600 transition-colors"
-                >
-                  انتظار
-                </button>
+              {/* Actions */}
+              <div className="pt-4 border-t border-border space-y-3">
+                <p className="text-sm font-medium text-card-foreground">تحديث الحالة</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => updateStatus(selectedRegistration.id, "approved")}
+                    className="flex-1 bg-green-500 text-white py-2 rounded-lg font-medium hover:bg-green-600 transition-colors"
+                  >
+                    قبول
+                  </button>
+                  <button
+                    onClick={() => updateStatus(selectedRegistration.id, "rejected")}
+                    className="flex-1 bg-red-500 text-white py-2 rounded-lg font-medium hover:bg-red-600 transition-colors"
+                  >
+                    رفض
+                  </button>
+                  <button
+                    onClick={() => updateStatus(selectedRegistration.id, "pending")}
+                    className="flex-1 bg-amber-500 text-white py-2 rounded-lg font-medium hover:bg-amber-600 transition-colors"
+                  >
+                    انتظار
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
       </div>
     </div>
   )
